@@ -638,16 +638,33 @@
             }
         ];
 
-        // Test de connexion Firebase
+        // Test de connexion Firebase amélioré
         async function testFirebaseConnection() {
             try {
-                await db.collection('test').doc('connection').set({ test: true });
-                await db.collection('test').doc('connection').delete();
+                console.log('🔄 Test de connexion Firebase...');
+                
+                // Test d'écriture simple
+                const testDoc = {
+                    test: true,
+                    timestamp: new Date().toISOString()
+                };
+                
+                const docRef = await db.collection('test').add(testDoc);
+                console.log('✅ Test d\'écriture réussi, ID:', docRef.id);
+                
+                // Nettoyer le test
+                await db.collection('test').doc(docRef.id).delete();
+                console.log('✅ Test de suppression réussi');
+                
                 firebaseConnected = true;
-                console.log('✅ Firebase connecté avec succès');
+                console.log('✅ Firebase connecté et opérationnel');
                 return true;
+                
             } catch (error) {
                 console.error('❌ Erreur de connexion Firebase:', error);
+                console.error('📋 Code d\'erreur:', error.code);
+                console.error('📋 Message:', error.message);
+                
                 firebaseConnected = false;
                 return false;
             }
@@ -770,18 +787,13 @@
             return vehicles.length > 0 ? Math.max(...vehicles.map(v => v.id)) : 0;
         }
 
-        // Ajouter un véhicule (VERSION CORRIGÉE)
+        // Ajouter un véhicule avec debug renforcé
         async function addVehicle(vehicleData) {
-            console.log('➕ Ajout véhicule:', vehicleData);
+            console.log('➕ Début ajout véhicule:', vehicleData);
             
             // Validation
             if (!vehicleData.name || !vehicleData.category || !vehicleData.price || !vehicleData.description) {
                 showMessage('Veuillez remplir tous les champs obligatoires!', 'error');
-                return;
-            }
-
-            if (vehicleData.image && !isValidDiscordImageUrl(vehicleData.image)) {
-                showMessage('Veuillez utiliser un lien d\'image valide.', 'error');
                 return;
             }
 
@@ -791,40 +803,51 @@
                 price: parseInt(vehicleData.price),
                 description: vehicleData.description,
                 image: vehicleData.image || '🚗',
-                category: vehicleData.category
+                category: vehicleData.category,
+                createdAt: new Date().toISOString() // Timestamp pour debug
             };
 
+            console.log('🚗 Véhicule à sauvegarder:', newVehicle);
+            console.log('🔗 Firebase connecté:', firebaseConnected);
+
             try {
+                // TOUJOURS essayer Firebase d'abord si connecté
                 if (firebaseConnected) {
-                    // Essayer Firebase d'abord
-                    const firestoreId = await saveVehicleToFirebase(newVehicle);
-                    newVehicle.firestoreId = firestoreId;
+                    console.log('📤 Tentative de sauvegarde Firebase...');
+                    
+                    const docRef = await db.collection('vehicles').add(newVehicle);
+                    newVehicle.firestoreId = docRef.id;
+                    
+                    console.log('✅ Véhicule sauvegardé dans Firebase avec ID:', docRef.id);
+                    showMessage(`✅ Véhicule "${newVehicle.name}" ajouté dans Firebase et "${newVehicle.category}"!`, 'success');
                 } else {
-                    console.log('⚠️ Mode hors ligne - sauvegarde localStorage uniquement');
+                    console.log('⚠️ Firebase non connecté - sauvegarde localStorage uniquement');
+                    showMessage(`⚠️ Véhicule "${newVehicle.name}" ajouté en mode hors ligne!`, 'success');
                 }
                 
                 // Ajouter à la liste locale
                 vehicles.push(newVehicle);
                 nextId++;
                 
-                // Sauvegarder en localStorage comme backup
+                // Backup localStorage
                 saveVehiclesToLocalStorage();
-                
-                showMessage(`✅ Véhicule "${newVehicle.name}" ajouté avec succès dans "${newVehicle.category}"!`, 'success');
                 
                 // Mettre à jour les affichages
                 renderAdminVehicleList();
                 renderVehicles(currentFilter);
                 
-            } catch (error) {
-                console.error('❌ Erreur ajout véhicule:', error);
+                console.log('🎉 Ajout terminé avec succès');
                 
-                // Fallback localStorage
+            } catch (error) {
+                console.error('❌ ERREUR lors de la sauvegarde Firebase:', error);
+                console.error('📋 Détails de l\'erreur:', error.message);
+                
+                // Fallback localStorage en cas d'erreur Firebase
                 vehicles.push(newVehicle);
                 nextId++;
                 saveVehiclesToLocalStorage();
                 
-                showMessage(`⚠️ Véhicule ajouté en mode hors ligne. Sera synchronisé à la reconnexion.`, 'success');
+                showMessage(`⚠️ Véhicule ajouté en mode hors ligne. Erreur Firebase: ${error.message}`, 'error');
                 renderAdminVehicleList();
                 renderVehicles(currentFilter);
             }
