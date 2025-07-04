@@ -575,131 +575,35 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
     <script>
-        // Configuration Firebase (à remplacer par vos clés)
+        // Configuration Firebase
         const firebaseConfig = {
-            apiKey: "VOTRE_API_KEY",
+            apiKey: "AIzaSyDaVzNSdFyU1bnLaIoRRmKX5-UDALB5q_I",
             authDomain: "novaruiina-boutique.firebaseapp.com",
             projectId: "novaruiina-boutique",
-            storageBucket: "novaruiina-boutique.appspot.com",
-            messagingSenderId: "123456789",
-            appId: "VOTRE_APP_ID"
+            storageBucket: "novaruiina-boutique.firebasestorage.app",
+            messagingSenderId: "182489662939",
+            appId: "1:182489662939:web:50a7b7cee4db4ea12993fe"
         };
 
         // Initialiser Firebase
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
 
-        // Charger les véhicules depuis Firebase
-        async function loadVehicles() {
-            try {
-                const snapshot = await db.collection('vehicles').orderBy('id').get();
-                vehicles = [];
-                let maxId = 0;
-                
-                snapshot.forEach(doc => {
-                    const vehicle = { ...doc.data(), firestoreId: doc.id };
-                    vehicles.push(vehicle);
-                    if (vehicle.id > maxId) maxId = vehicle.id;
-                });
-                
-                nextId = maxId + 1;
-                
-                // Si aucun véhicule, créer les véhicules par défaut
-                if (vehicles.length === 0) {
-                    await createDefaultVehicles();
-                }
-                
-                console.log('Véhicules chargés depuis Firebase:', vehicles);
-            } catch (error) {
-                console.error('Erreur lors du chargement:', error);
-                // Fallback vers localStorage
-                loadVehiclesFromLocalStorage();
-            }
-        }
+        // Variables globales
+        let vehicles = [];
+        let nextId = 1;
+        let isLoggedIn = false;
+        let currentFilter = 'all';
+        let firebaseConnected = false;
 
-        // Créer les véhicules par défaut dans Firebase
-        async function createDefaultVehicles() {
-            const defaultVehicles = [
-                {
-                    id: 1,
-                    name: "Terrabit",
-                    price: 45000,
-                    description: "Véhicule tout-terrain blindé, parfait pour traverser les zones radioactives.",
-                    image: "🏎️",
-                    category: "Import"
-                },
-                {
-                    id: 2,
-                    name: "Wasteland Truck",
-                    price: 75000,
-                    description: "Camion lourd avec armure renforcée et capacité de transport maximale.",
-                    image: "🚛",
-                    category: "Camion"
-                },
-                {
-                    id: 3,
-                    name: "Desert Raider",
-                    price: 35000,
-                    description: "Moto rapide et agile pour les raids dans le désert post-apocalyptique.",
-                    image: "🏍️",
-                    category: "Moto"
-                },
-                {
-                    id: 4,
-                    name: "Armored Beast",
-                    price: 95000,
-                    description: "Tank civil modifié avec tourelle défensive et blindage maximal.",
-                    image: "🚗",
-                    category: "Import"
-                }
-            ];
+        // Identifiants d'accès
+        const ADMIN_CREDENTIALS = {
+            username: "admin",
+            password: "Novaruiina2025"
+        };
 
-            for (const vehicle of defaultVehicles) {
-                await db.collection('vehicles').add(vehicle);
-            }
-            
-            await loadVehicles(); // Recharger après création
-        }
-
-        // Sauvegarder un véhicule dans Firebase
-        async function saveVehicleToFirebase(vehicle) {
-            try {
-                const docRef = await db.collection('vehicles').add(vehicle);
-                vehicle.firestoreId = docRef.id;
-                console.log('Véhicule sauvegardé avec ID:', docRef.id);
-                return docRef.id;
-            } catch (error) {
-                console.error('Erreur lors de la sauvegarde:', error);
-                throw error;
-            }
-        }
-
-        // Supprimer un véhicule de Firebase
-        async function deleteVehicleFromFirebase(firestoreId) {
-            try {
-                await db.collection('vehicles').doc(firestoreId).delete();
-                console.log('Véhicule supprimé de Firebase');
-            } catch (error) {
-                console.error('Erreur lors de la suppression:', error);
-                throw error;
-            }
-        }
-
-        // Fallback vers localStorage
-        function loadVehiclesFromLocalStorage() {
-            const savedVehicles = localStorage.getItem('wasteland_vehicles');
-            const savedNextId = localStorage.getItem('wasteland_nextId');
-            
-            if (savedVehicles) {
-                vehicles = JSON.parse(savedVehicles);
-                nextId = savedNextId ? parseInt(savedNextId) : getMaxId() + 1;
-            } else {
-                vehicles = [...defaultVehiclesLocal];
-                nextId = 5;
-            }
-        }
-
-        const defaultVehiclesLocal = [
+        // Véhicules par défaut
+        const defaultVehicles = [
             {
                 id: 1,
                 name: "Terrabit",
@@ -734,23 +638,255 @@
             }
         ];
 
-        // Obtenir l'ID maximum pour éviter les conflits
+        // Test de connexion Firebase
+        async function testFirebaseConnection() {
+            try {
+                await db.collection('test').doc('connection').set({ test: true });
+                await db.collection('test').doc('connection').delete();
+                firebaseConnected = true;
+                console.log('✅ Firebase connecté avec succès');
+                return true;
+            } catch (error) {
+                console.error('❌ Erreur de connexion Firebase:', error);
+                firebaseConnected = false;
+                return false;
+            }
+        }
+
+        // Charger les véhicules
+        async function loadVehicles() {
+            console.log('🔄 Chargement des véhicules...');
+            
+            // Tester la connexion Firebase
+            const connected = await testFirebaseConnection();
+            
+            if (connected) {
+                try {
+                    const snapshot = await db.collection('vehicles').orderBy('id').get();
+                    vehicles = [];
+                    let maxId = 0;
+                    
+                    snapshot.forEach(doc => {
+                        const vehicle = { ...doc.data(), firestoreId: doc.id };
+                        vehicles.push(vehicle);
+                        if (vehicle.id > maxId) maxId = vehicle.id;
+                    });
+                    
+                    nextId = maxId + 1;
+                    
+                    if (vehicles.length === 0) {
+                        console.log('🆕 Aucun véhicule trouvé, création des véhicules par défaut...');
+                        await createDefaultVehicles();
+                    }
+                    
+                    console.log('✅ Véhicules chargés depuis Firebase:', vehicles.length);
+                    
+                } catch (error) {
+                    console.error('❌ Erreur lors du chargement Firebase:', error);
+                    loadVehiclesFromLocalStorage();
+                }
+            } else {
+                console.log('📱 Utilisation du localStorage (mode hors ligne)');
+                loadVehiclesFromLocalStorage();
+            }
+            
+            renderVehicles();
+        }
+
+        // Créer les véhicules par défaut dans Firebase
+        async function createDefaultVehicles() {
+            try {
+                for (const vehicle of defaultVehicles) {
+                    const docRef = await db.collection('vehicles').add(vehicle);
+                    vehicle.firestoreId = docRef.id;
+                    vehicles.push({ ...vehicle });
+                }
+                nextId = defaultVehicles.length + 1;
+                console.log('✅ Véhicules par défaut créés dans Firebase');
+            } catch (error) {
+                console.error('❌ Erreur création véhicules par défaut:', error);
+                vehicles = [...defaultVehicles];
+                nextId = defaultVehicles.length + 1;
+                saveVehiclesToLocalStorage();
+            }
+        }
+
+        // Sauvegarder un véhicule dans Firebase
+        async function saveVehicleToFirebase(vehicle) {
+            if (!firebaseConnected) {
+                throw new Error('Firebase non disponible');
+            }
+            
+            try {
+                console.log('💾 Sauvegarde véhicule dans Firebase:', vehicle);
+                const docRef = await db.collection('vehicles').add(vehicle);
+                console.log('✅ Véhicule sauvegardé avec ID:', docRef.id);
+                return docRef.id;
+            } catch (error) {
+                console.error('❌ Erreur sauvegarde Firebase:', error);
+                throw error;
+            }
+        }
+
+        // Supprimer un véhicule de Firebase
+        async function deleteVehicleFromFirebase(firestoreId) {
+            if (!firebaseConnected || !firestoreId) {
+                throw new Error('Firebase non disponible ou ID manquant');
+            }
+            
+            try {
+                await db.collection('vehicles').doc(firestoreId).delete();
+                console.log('✅ Véhicule supprimé de Firebase');
+            } catch (error) {
+                console.error('❌ Erreur suppression Firebase:', error);
+                throw error;
+            }
+        }
+
+        // Fallback localStorage
+        function loadVehiclesFromLocalStorage() {
+            const savedVehicles = localStorage.getItem('wasteland_vehicles');
+            const savedNextId = localStorage.getItem('wasteland_nextId');
+            
+            if (savedVehicles) {
+                vehicles = JSON.parse(savedVehicles);
+                nextId = savedNextId ? parseInt(savedNextId) : getMaxId() + 1;
+                console.log('📱 Véhicules chargés depuis localStorage:', vehicles.length);
+            } else {
+                vehicles = [...defaultVehicles];
+                nextId = defaultVehicles.length + 1;
+                saveVehiclesToLocalStorage();
+                console.log('🆕 Véhicules par défaut chargés (localStorage)');
+            }
+        }
+
+        function saveVehiclesToLocalStorage() {
+            localStorage.setItem('wasteland_vehicles', JSON.stringify(vehicles));
+            localStorage.setItem('wasteland_nextId', nextId.toString());
+            console.log('💾 Sauvegarde localStorage effectuée');
+        }
+
         function getMaxId() {
             return vehicles.length > 0 ? Math.max(...vehicles.map(v => v.id)) : 0;
         }
 
-        // Base de données des véhicules (chargée depuis localStorage)
-        let vehicles = [];
-        let nextId = 5;
-        let isLoggedIn = false;
+        // Ajouter un véhicule (VERSION CORRIGÉE)
+        async function addVehicle(vehicleData) {
+            console.log('➕ Ajout véhicule:', vehicleData);
+            
+            // Validation
+            if (!vehicleData.name || !vehicleData.category || !vehicleData.price || !vehicleData.description) {
+                showMessage('Veuillez remplir tous les champs obligatoires!', 'error');
+                return;
+            }
 
-        // Identifiants d'accès (à personnaliser)
-        const ADMIN_CREDENTIALS = {
-            username: "admin",
-            password: "Novaruiina2025"
-        };
+            if (vehicleData.image && !isValidDiscordImageUrl(vehicleData.image)) {
+                showMessage('Veuillez utiliser un lien d\'image valide.', 'error');
+                return;
+            }
 
-        // Fonctions de navigation
+            const newVehicle = {
+                id: nextId,
+                name: vehicleData.name,
+                price: parseInt(vehicleData.price),
+                description: vehicleData.description,
+                image: vehicleData.image || '🚗',
+                category: vehicleData.category
+            };
+
+            try {
+                if (firebaseConnected) {
+                    // Essayer Firebase d'abord
+                    const firestoreId = await saveVehicleToFirebase(newVehicle);
+                    newVehicle.firestoreId = firestoreId;
+                } else {
+                    console.log('⚠️ Mode hors ligne - sauvegarde localStorage uniquement');
+                }
+                
+                // Ajouter à la liste locale
+                vehicles.push(newVehicle);
+                nextId++;
+                
+                // Sauvegarder en localStorage comme backup
+                saveVehiclesToLocalStorage();
+                
+                showMessage(`✅ Véhicule "${newVehicle.name}" ajouté avec succès dans "${newVehicle.category}"!`, 'success');
+                
+                // Mettre à jour les affichages
+                renderAdminVehicleList();
+                renderVehicles(currentFilter);
+                
+            } catch (error) {
+                console.error('❌ Erreur ajout véhicule:', error);
+                
+                // Fallback localStorage
+                vehicles.push(newVehicle);
+                nextId++;
+                saveVehiclesToLocalStorage();
+                
+                showMessage(`⚠️ Véhicule ajouté en mode hors ligne. Sera synchronisé à la reconnexion.`, 'success');
+                renderAdminVehicleList();
+                renderVehicles(currentFilter);
+            }
+        }
+
+        // Supprimer un véhicule (VERSION CORRIGÉE)
+        async function deleteVehicle(id) {
+            const vehicleIndex = vehicles.findIndex(v => v.id === id);
+            if (vehicleIndex === -1) {
+                showMessage('Véhicule non trouvé!', 'error');
+                return;
+            }
+
+            const vehicle = vehicles[vehicleIndex];
+            const vehicleName = vehicle.name;
+            
+            try {
+                if (firebaseConnected && vehicle.firestoreId) {
+                    await deleteVehicleFromFirebase(vehicle.firestoreId);
+                }
+                
+                // Supprimer de la liste locale
+                vehicles.splice(vehicleIndex, 1);
+                
+                // Sauvegarder en localStorage
+                saveVehiclesToLocalStorage();
+                
+                showMessage(`✅ Véhicule "${vehicleName}" supprimé avec succès!`, 'success');
+                
+                // Mettre à jour les affichages
+                renderAdminVehicleList();
+                renderVehicles(currentFilter);
+                
+            } catch (error) {
+                console.error('❌ Erreur suppression:', error);
+                showMessage(`❌ Erreur lors de la suppression: ${error.message}`, 'error');
+            }
+        }
+
+        // Validation URL Discord
+        function isValidDiscordImageUrl(url) {
+            if (!url) return true;
+            return url.includes('cdn.discordapp.com') || 
+                   url.includes('media.discordapp.net') || 
+                   url.startsWith('https://');
+        }
+
+        // Prévisualisation image
+        function previewImage(url) {
+            const preview = document.getElementById('image-preview');
+            const previewImg = document.getElementById('preview-img');
+            
+            if (url && isValidDiscordImageUrl(url)) {
+                previewImg.src = url;
+                previewImg.onload = () => preview.style.display = 'block';
+                previewImg.onerror = () => preview.style.display = 'none';
+            } else {
+                preview.style.display = 'none';
+            }
+        }
+
+        // Reste des fonctions (navigation, rendu, etc.)
         function showShop() {
             document.getElementById('shop-section').style.display = 'block';
             document.getElementById('admin-panel').style.display = 'none';
@@ -761,7 +897,6 @@
             document.getElementById('shop-section').style.display = 'none';
             document.getElementById('admin-panel').style.display = 'block';
             
-            // Vérifier si l'utilisateur est connecté
             if (!isLoggedIn) {
                 showLoginForm();
             } else {
@@ -769,7 +904,6 @@
             }
         }
 
-        // Fonctions d'authentification
         function showLoginForm() {
             document.getElementById('login-form').style.display = 'block';
             document.getElementById('admin-content').style.display = 'none';
@@ -785,9 +919,7 @@
             if (username === ADMIN_CREDENTIALS.username && password === ADMIN_CREDENTIALS.password) {
                 isLoggedIn = true;
                 showLoginMessage('Connexion réussie ! Bienvenue administrateur.', 'success');
-                setTimeout(() => {
-                    showAdminContent();
-                }, 1000);
+                setTimeout(showAdminContent, 1000);
                 return true;
             } else {
                 showLoginMessage('Identifiant ou mot de passe incorrect !', 'error');
@@ -799,60 +931,43 @@
             isLoggedIn = false;
             showLoginForm();
             showLoginMessage('Déconnexion réussie.', 'success');
-            
-            // Effacer les champs de connexion
             document.getElementById('username').value = '';
             document.getElementById('password').value = '';
         }
 
-        function showLoginMessage(text, type) {
-            const container = document.getElementById('login-message-container');
-            const message = document.createElement('div');
-            message.className = `message ${type}`;
-            message.textContent = text;
+        function filterByCategory(category) {
+            currentFilter = category;
             
-            container.innerHTML = '';
-            container.appendChild(message);
+            document.querySelectorAll('.category-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
             
-            // Supprimer le message après 3 secondes
-            setTimeout(() => {
-                message.style.opacity = '0';
-                setTimeout(() => {
-                    if (message.parentNode) {
-                        message.parentNode.removeChild(message);
-                    }
-                }, 300);
-            }, 3000);
+            document.querySelectorAll('.category-btn').forEach(btn => {
+                if ((category === 'all' && btn.textContent === 'Tous') ||
+                    (category === 'Camion' && btn.textContent === 'Camions') ||
+                    (category === 'Moto' && btn.textContent === 'Motos') ||
+                    (category === 'Import' && btn.textContent === 'Import') ||
+                    (category === 'Remorque' && btn.textContent === 'Remorques')) {
+                    btn.classList.add('active');
+                }
+            });
+            
+            renderVehicles(category);
         }
 
-        // Variable pour le filtre actuel
-        let currentFilter = 'all';
-
-        // Rendu des véhicules dans la boutique
         function renderVehicles(filterCategory = null) {
             const container = document.getElementById('vehicles-container');
             container.innerHTML = '';
 
-            // Debug: vérifier le filtre appliqué
-            console.log('Filtre appliqué:', filterCategory);
-            console.log('Véhicules disponibles:', vehicles);
-
-            // Filtrer les véhicules selon la catégorie
             let filteredVehicles = vehicles;
             if (filterCategory && filterCategory !== 'all') {
-                filteredVehicles = vehicles.filter(vehicle => {
-                    console.log(`Véhicule ${vehicle.name}: catégorie "${vehicle.category}" vs filtre "${filterCategory}"`);
-                    return vehicle.category === filterCategory;
-                });
+                filteredVehicles = vehicles.filter(vehicle => vehicle.category === filterCategory);
             }
-
-            console.log('Véhicules filtrés:', filteredVehicles);
 
             filteredVehicles.forEach(vehicle => {
                 const vehicleCard = document.createElement('div');
                 vehicleCard.className = 'vehicle-card';
                 
-                // Vérifier si c'est une URL d'image ou un emoji
                 let imageContent;
                 if (vehicle.image && (vehicle.image.startsWith('http') || vehicle.image.startsWith('https'))) {
                     imageContent = `<img src="${vehicle.image}" alt="${vehicle.name}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 5px;" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
@@ -873,31 +988,6 @@
             });
         }
 
-        // Fonction pour filtrer par catégorie
-        function filterByCategory(category) {
-            currentFilter = category;
-            
-            // Mettre à jour les boutons actifs
-            document.querySelectorAll('.category-btn').forEach(btn => {
-                btn.classList.remove('active');
-            });
-            
-            // Trouver et activer le bon bouton
-            document.querySelectorAll('.category-btn').forEach(btn => {
-                if ((category === 'all' && btn.textContent === 'Tous') ||
-                    (category === 'Camion' && btn.textContent === 'Camions') ||
-                    (category === 'Moto' && btn.textContent === 'Motos') ||
-                    (category === 'Import' && btn.textContent === 'Import') ||
-                    (category === 'Remorque' && btn.textContent === 'Remorques')) {
-                    btn.classList.add('active');
-                }
-            });
-            
-            // Render les véhicules filtrés
-            renderVehicles(category);
-        }
-
-        // Rendu de la liste des véhicules dans l'admin
         function renderAdminVehicleList() {
             const container = document.getElementById('admin-vehicle-list');
             container.innerHTML = '';
@@ -917,7 +1007,6 @@
             });
         }
 
-        // Fonction d'achat (simulation)
         function purchaseVehicle(id) {
             const vehicle = vehicles.find(v => v.id === id);
             if (vehicle) {
@@ -925,114 +1014,6 @@
             }
         }
 
-        // Fonction pour valider les liens Discord
-        function isValidDiscordImageUrl(url) {
-            if (!url) return true; // URL optionnelle
-            return url.includes('cdn.discordapp.com') || url.includes('media.discordapp.net') || url.startsWith('https://');
-        }
-
-        // Fonction pour prévisualiser l'image
-        function previewImage(url) {
-            const preview = document.getElementById('image-preview');
-            const previewImg = document.getElementById('preview-img');
-            
-            if (url && isValidDiscordImageUrl(url)) {
-                previewImg.src = url;
-                previewImg.onload = function() {
-                    preview.style.display = 'block';
-                };
-                previewImg.onerror = function() {
-                    preview.style.display = 'none';
-                };
-            } else {
-                preview.style.display = 'none';
-            }
-        }
-
-        // Fonction pour ajouter un véhicule
-        async function addVehicle(vehicleData) {
-            // Validation du lien d'image
-            if (vehicleData.image && !isValidDiscordImageUrl(vehicleData.image)) {
-                showMessage('Veuillez utiliser un lien d\'image valide (de préférence Discord).', 'error');
-                return;
-            }
-
-            const newVehicle = {
-                id: nextId++,
-                name: vehicleData.name,
-                price: parseInt(vehicleData.price),
-                description: vehicleData.description,
-                image: vehicleData.image || '🚗',
-                category: vehicleData.category
-            };
-            
-            try {
-                // Sauvegarder dans Firebase
-                await saveVehicleToFirebase(newVehicle);
-                
-                // Ajouter à la liste locale
-                vehicles.push(newVehicle);
-                
-                showMessage(`Véhicule "${newVehicle.name}" ajouté avec succès dans la catégorie "${newVehicle.category}"!`, 'success');
-                renderAdminVehicleList();
-                
-                // Si on est sur la page boutique, rafraîchir aussi
-                if (document.getElementById('shop-section').style.display !== 'none') {
-                    renderVehicles(currentFilter);
-                }
-            } catch (error) {
-                showMessage('Erreur lors de l\'ajout du véhicule. Veuillez réessayer.', 'error');
-                console.error('Erreur:', error);
-            }
-        }
-
-        // Fonction pour supprimer un véhicule
-        async function deleteVehicle(id) {
-            const vehicleIndex = vehicles.findIndex(v => v.id === id);
-            if (vehicleIndex !== -1) {
-                const vehicle = vehicles[vehicleIndex];
-                const vehicleName = vehicle.name;
-                
-                try {
-                    // Supprimer de Firebase si l'ID Firestore existe
-                    if (vehicle.firestoreId) {
-                        await deleteVehicleFromFirebase(vehicle.firestoreId);
-                    }
-                    
-                    // Supprimer de la liste locale
-                    vehicles.splice(vehicleIndex, 1);
-                    
-                    showMessage(`Véhicule "${vehicleName}" supprimé avec succès!`, 'success');
-                    renderAdminVehicleList();
-                    
-                    // Si on est sur la page boutique, rafraîchir aussi
-                    if (document.getElementById('shop-section').style.display !== 'none') {
-                        renderVehicles(currentFilter);
-                    }
-                } catch (error) {
-                    showMessage('Erreur lors de la suppression. Veuillez réessayer.', 'error');
-                    console.error('Erreur:', error);
-                }
-            }
-        }
-
-        // Fonction pour réinitialiser les véhicules par défaut
-        function resetVehicles() {
-            if (confirm('Êtes-vous sûr de vouloir réinitialiser tous les véhicules ? Cette action supprimera tous les véhicules ajoutés et restaurera les véhicules par défaut.')) {
-                vehicles = [...defaultVehicles];
-                nextId = 5;
-                saveVehicles();
-                showMessage('Véhicules réinitialisés avec succès!', 'success');
-                renderAdminVehicleList();
-                
-                // Si on est sur la page boutique, rafraîchir aussi
-                if (document.getElementById('shop-section').style.display !== 'none') {
-                    renderVehicles(currentFilter);
-                }
-            }
-        }
-
-        // Fonction pour afficher les messages
         function showMessage(text, type) {
             const container = document.getElementById('message-container');
             const message = document.createElement('div');
@@ -1042,7 +1023,6 @@
             container.innerHTML = '';
             container.appendChild(message);
             
-            // Supprimer le message après 3 secondes
             setTimeout(() => {
                 message.style.opacity = '0';
                 setTimeout(() => {
@@ -1053,18 +1033,32 @@
             }, 3000);
         }
 
-        // Gestion du formulaire de connexion
+        function showLoginMessage(text, type) {
+            const container = document.getElementById('login-message-container');
+            const message = document.createElement('div');
+            message.className = `message ${type}`;
+            message.textContent = text;
+            
+            container.innerHTML = '';
+            container.appendChild(message);
+            
+            setTimeout(() => {
+                message.style.opacity = '0';
+                setTimeout(() => {
+                    if (message.parentNode) {
+                        message.parentNode.removeChild(message);
+                    }
+                }, 300);
+            }, 3000);
+        }
+
+        // Event Listeners
         document.getElementById('login-form-element').addEventListener('submit', function(e) {
             e.preventDefault();
-            
             const formData = new FormData(this);
-            const username = formData.get('username');
-            const password = formData.get('password');
-            
-            login(username, password);
+            login(formData.get('username'), formData.get('password'));
         });
 
-        // Gestion du formulaire de véhicule
         document.getElementById('vehicle-form').addEventListener('submit', function(e) {
             e.preventDefault();
             
@@ -1077,27 +1071,16 @@
                 image: formData.get('image')
             };
             
-            // Validation
-            if (!vehicleData.name || !vehicleData.category || !vehicleData.price || !vehicleData.description) {
-                showMessage('Veuillez remplir tous les champs obligatoires!', 'error');
-                return;
-            }
-            
-            if (vehicleData.price < 0) {
-                showMessage('Le prix doit être positif!', 'error');
-                return;
-            }
-            
             addVehicle(vehicleData);
             this.reset();
-            // Cacher l'aperçu de l'image après soumission
             document.getElementById('image-preview').style.display = 'none';
         });
 
         // Initialisation
         document.addEventListener('DOMContentLoaded', async function() {
-            await loadVehicles(); // Charger les véhicules depuis Firebase
-            showShop(); // Afficher la boutique par défaut
+            console.log('🚀 Initialisation de l\'application...');
+            await loadVehicles();
+            showShop();
         });
     </script>
 </body>
