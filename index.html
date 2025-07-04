@@ -1,0 +1,786 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bout - Boutique FiveM</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Roboto+Mono:wght@300;400;700&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Roboto Mono', monospace;
+            background: linear-gradient(135deg, #1a1a1a 0%, #2d1b1b 50%, #1a1a1a 100%);
+            color: #e0e0e0;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Animation d'arrière-plan */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                radial-gradient(circle at 20% 50%, rgba(255, 69, 0, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(139, 69, 19, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 40% 80%, rgba(255, 140, 0, 0.05) 0%, transparent 50%);
+            z-index: -1;
+            animation: ambientGlow 10s ease-in-out infinite alternate;
+        }
+
+        @keyframes ambientGlow {
+            0% { opacity: 0.3; }
+            100% { opacity: 0.7; }
+        }
+
+        /* Header */
+        header {
+            background: linear-gradient(45deg, #2c1810, #3d2317);
+            border-bottom: 3px solid #ff4500;
+            padding: 1rem 0;
+            box-shadow: 0 4px 20px rgba(255, 69, 0, 0.3);
+        }
+
+        nav {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 2rem;
+        }
+
+        .logo {
+            font-family: 'Orbitron', monospace;
+            font-size: 2rem;
+            font-weight: 900;
+            color: #ff4500;
+            text-shadow: 0 0 10px rgba(255, 69, 0, 0.5);
+        }
+
+        .nav-buttons {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .btn {
+            padding: 0.8rem 1.5rem;
+            background: linear-gradient(45deg, #3d2317, #2c1810);
+            color: #e0e0e0;
+            border: 2px solid #ff4500;
+            border-radius: 5px;
+            font-family: 'Roboto Mono', monospace;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .btn:hover {
+            background: linear-gradient(45deg, #ff4500, #ff6500);
+            box-shadow: 0 0 15px rgba(255, 69, 0, 0.6);
+            transform: translateY(-2px);
+        }
+
+        /* Container principal */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        /* Section boutique */
+        .shop-section {
+            display: block;
+        }
+
+        .shop-header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .shop-title {
+            font-family: 'Orbitron', monospace;
+            font-size: 3rem;
+            color: #ff4500;
+            text-shadow: 0 0 20px rgba(255, 69, 0, 0.5);
+            margin-bottom: 1rem;
+        }
+
+        .shop-subtitle {
+            font-size: 1.2rem;
+            color: #b0b0b0;
+            font-style: italic;
+        }
+
+        /* Grille des véhicules */
+        .vehicles-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        .vehicle-card {
+            background: linear-gradient(145deg, #2a2a2a, #1a1a1a);
+            border: 2px solid #444;
+            border-radius: 10px;
+            padding: 1.5rem;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .vehicle-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 69, 0, 0.1), transparent);
+            transition: left 0.5s;
+        }
+
+        .vehicle-card:hover::before {
+            left: 100%;
+        }
+
+        .vehicle-card:hover {
+            border-color: #ff4500;
+            box-shadow: 0 10px 30px rgba(255, 69, 0, 0.3);
+            transform: translateY(-5px);
+        }
+
+        .vehicle-image {
+            width: 100%;
+            height: 200px;
+            background: #333;
+            border-radius: 5px;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3rem;
+            color: #666;
+        }
+
+        .vehicle-name {
+            font-family: 'Orbitron', monospace;
+            font-size: 1.3rem;
+            color: #ff4500;
+            margin-bottom: 0.5rem;
+        }
+
+        .vehicle-price {
+            font-size: 1.5rem;
+            color: #4ade80;
+            font-weight: bold;
+            margin-bottom: 1rem;
+        }
+
+        .vehicle-description {
+            color: #b0b0b0;
+            margin-bottom: 1rem;
+            line-height: 1.4;
+        }
+
+        /* Panel Admin */
+        .admin-panel {
+            display: none;
+            background: linear-gradient(145deg, #2a1810, #1a1010);
+            border: 2px solid #ff4500;
+            border-radius: 10px;
+            padding: 2rem;
+            margin-top: 2rem;
+        }
+
+        /* Login Form */
+        .login-form {
+            max-width: 400px;
+            margin: 0 auto;
+            background: linear-gradient(145deg, #1a1a1a, #2a2a2a);
+            border: 2px solid #ff4500;
+            border-radius: 10px;
+            padding: 2rem;
+            box-shadow: 0 10px 30px rgba(255, 69, 0, 0.3);
+        }
+
+        .login-title {
+            font-family: 'Orbitron', monospace;
+            font-size: 1.8rem;
+            color: #ff4500;
+            text-align: center;
+            margin-bottom: 2rem;
+            text-shadow: 0 0 10px rgba(255, 69, 0, 0.5);
+        }
+
+        .login-subtitle {
+            text-align: center;
+            color: #b0b0b0;
+            margin-bottom: 2rem;
+            font-style: italic;
+        }
+
+        .admin-content {
+            display: none;
+        }
+
+        .admin-title {
+            font-family: 'Orbitron', monospace;
+            font-size: 2rem;
+            color: #ff4500;
+            text-align: center;
+            margin-bottom: 2rem;
+            text-shadow: 0 0 10px rgba(255, 69, 0, 0.5);
+        }
+
+        .admin-form {
+            display: grid;
+            gap: 1rem;
+            max-width: 500px;
+            margin: 0 auto;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-group label {
+            color: #e0e0e0;
+            margin-bottom: 0.5rem;
+            font-weight: bold;
+        }
+
+        .form-group input,
+        .form-group textarea {
+            padding: 0.8rem;
+            background: #1a1a1a;
+            border: 2px solid #444;
+            border-radius: 5px;
+            color: #e0e0e0;
+            font-family: 'Roboto Mono', monospace;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus {
+            border-color: #ff4500;
+            outline: none;
+            box-shadow: 0 0 10px rgba(255, 69, 0, 0.3);
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        /* Section de gestion des véhicules */
+        .vehicle-management {
+            margin-top: 2rem;
+        }
+
+        .management-title {
+            font-family: 'Orbitron', monospace;
+            font-size: 1.5rem;
+            color: #ff4500;
+            margin-bottom: 1rem;
+        }
+
+        .vehicle-list {
+            background: #1a1a1a;
+            border: 2px solid #444;
+            border-radius: 5px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .vehicle-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem;
+            border-bottom: 1px solid #333;
+        }
+
+        .vehicle-item:last-child {
+            border-bottom: none;
+        }
+
+        .vehicle-info {
+            flex: 1;
+        }
+
+        .vehicle-item-name {
+            color: #ff4500;
+            font-weight: bold;
+        }
+
+        .vehicle-item-price {
+            color: #4ade80;
+            font-size: 0.9rem;
+        }
+
+        .delete-btn {
+            background: linear-gradient(45deg, #dc2626, #b91c1c);
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 5px;
+            cursor: pointer;
+            font-family: 'Roboto Mono', monospace;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        .delete-btn:hover {
+            background: linear-gradient(45deg, #b91c1c, #991b1b);
+            box-shadow: 0 0 10px rgba(220, 38, 38, 0.5);
+        }
+
+        /* Styles responsifs */
+        @media (max-width: 768px) {
+            .nav-buttons {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+
+            .shop-title {
+                font-size: 2rem;
+            }
+
+            .vehicles-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .container {
+                padding: 1rem;
+            }
+        }
+
+        /* Styles pour les messages */
+        .message {
+            padding: 1rem;
+            margin: 1rem 0;
+            border-radius: 5px;
+            text-align: center;
+            font-weight: bold;
+        }
+
+        .message.success {
+            background: rgba(74, 222, 128, 0.2);
+            border: 2px solid #4ade80;
+            color: #4ade80;
+        }
+
+        .message.error {
+            background: rgba(239, 68, 68, 0.2);
+            border: 2px solid #ef4444;
+            color: #ef4444;
+        }
+
+        /* Animation d'apparition */
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .vehicle-card {
+            animation: slideIn 0.6s ease-out;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <nav>
+            <div class="logo">WASTELAND MOTORS</div>
+            <div class="nav-buttons">
+                <button class="btn" onclick="showShop()">Boutique</button>
+                <button class="btn" onclick="showAdmin()">Panel Admin</button>
+            </div>
+        </nav>
+    </header>
+
+    <div class="container">
+        <!-- Section Boutique -->
+        <section id="shop-section" class="shop-section">
+            <div class="shop-header">
+                <h1 class="shop-title">VÉHICULES POST-APOCALYPTIQUES</h1>
+                <p class="shop-subtitle">Les meilleurs véhicules pour survivre dans le wasteland</p>
+            </div>
+            
+            <div id="vehicles-container" class="vehicles-grid">
+                <!-- Les véhicules seront générés dynamiquement ici -->
+            </div>
+        </section>
+
+        <!-- Panel Admin -->
+        <section id="admin-panel" class="admin-panel">
+            <!-- Formulaire de connexion -->
+            <div id="login-form" class="login-form">
+                <h2 class="login-title">🔒 ACCÈS SÉCURISÉ 🔒</h2>
+                <p class="login-subtitle">Zone réservée aux administrateurs</p>
+                
+                <div id="login-message-container"></div>
+                
+                <form id="login-form-element" class="admin-form">
+                    <div class="form-group">
+                        <label for="username">Identifiant</label>
+                        <input type="text" id="username" name="username" placeholder="Votre identifiant" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="password">Mot de passe</label>
+                        <input type="password" id="password" name="password" placeholder="Votre mot de passe" required>
+                    </div>
+                    
+                    <button type="submit" class="btn">Se connecter</button>
+                </form>
+            </div>
+
+            <!-- Contenu admin (caché par défaut) -->
+            <div id="admin-content" class="admin-content">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                    <h2 class="admin-title">🔧 PANEL ADMINISTRATEUR 🔧</h2>
+                    <button class="btn" onclick="logout()" style="background: linear-gradient(45deg, #dc2626, #b91c1c);">Déconnexion</button>
+                </div>
+                
+                <div id="message-container"></div>
+                
+                <form id="vehicle-form" class="admin-form">
+                    <div class="form-group">
+                        <label for="vehicle-name">Nom du véhicule</label>
+                        <input type="text" id="vehicle-name" name="name" placeholder="Ex: Apocalypse Buggy" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="vehicle-price">Prix (Secret Coins)</label>
+                        <input type="number" id="vehicle-price" name="price" placeholder="Ex: 50000" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="vehicle-description">Description</label>
+                        <textarea id="vehicle-description" name="description" placeholder="Description du véhicule..." required></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="vehicle-image">URL de l'image Discord</label>
+                        <input type="url" id="vehicle-image" name="image" placeholder="https://cdn.discordapp.com/attachments/..." oninput="previewImage(this.value)">
+                        <small style="color: #b0b0b0; font-size: 0.8rem; margin-top: 0.5rem; display: block;">
+                            💡 Pour obtenir un lien Discord : Clic droit sur l'image → "Copier le lien de l'image"
+                        </small>
+                        <div id="image-preview" style="margin-top: 1rem; display: none;">
+                            <img id="preview-img" style="max-width: 200px; max-height: 150px; border-radius: 5px; border: 2px solid #ff4500;">
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="btn">Ajouter le véhicule</button>
+                </form>
+
+                <div class="vehicle-management">
+                    <h3 class="management-title">Gestion des véhicules</h3>
+                    <div id="admin-vehicle-list" class="vehicle-list">
+                        <!-- Liste des véhicules pour administration -->
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        // Base de données des véhicules (simulation)
+        let vehicles = [
+            
+        ];
+
+        let nextId = 5;
+        let isLoggedIn = false;
+
+        // Identifiants d'accès (à personnaliser)
+        const ADMIN_CREDENTIALS = {
+            username: "admin",
+            password: "Novaruiina2025"
+        };
+
+        // Fonctions de navigation
+        function showShop() {
+            document.getElementById('shop-section').style.display = 'block';
+            document.getElementById('admin-panel').style.display = 'none';
+            renderVehicles();
+        }
+
+        function showAdmin() {
+            document.getElementById('shop-section').style.display = 'none';
+            document.getElementById('admin-panel').style.display = 'block';
+            
+            // Vérifier si l'utilisateur est connecté
+            if (!isLoggedIn) {
+                showLoginForm();
+            } else {
+                showAdminContent();
+            }
+        }
+
+        // Fonctions d'authentification
+        function showLoginForm() {
+            document.getElementById('login-form').style.display = 'block';
+            document.getElementById('admin-content').style.display = 'none';
+        }
+
+        function showAdminContent() {
+            document.getElementById('login-form').style.display = 'none';
+            document.getElementById('admin-content').style.display = 'block';
+            renderAdminVehicleList();
+        }
+
+        function login(username, password) {
+            if (username === ADMIN_CREDENTIALS.username && password === ADMIN_CREDENTIALS.password) {
+                isLoggedIn = true;
+                showLoginMessage('Connexion réussie ! Bienvenue administrateur.', 'success');
+                setTimeout(() => {
+                    showAdminContent();
+                }, 1000);
+                return true;
+            } else {
+                showLoginMessage('Identifiant ou mot de passe incorrect !', 'error');
+                return false;
+            }
+        }
+
+        function logout() {
+            isLoggedIn = false;
+            showLoginForm();
+            showLoginMessage('Déconnexion réussie.', 'success');
+            
+            // Effacer les champs de connexion
+            document.getElementById('username').value = '';
+            document.getElementById('password').value = '';
+        }
+
+        function showLoginMessage(text, type) {
+            const container = document.getElementById('login-message-container');
+            const message = document.createElement('div');
+            message.className = `message ${type}`;
+            message.textContent = text;
+            
+            container.innerHTML = '';
+            container.appendChild(message);
+            
+            // Supprimer le message après 3 secondes
+            setTimeout(() => {
+                message.style.opacity = '0';
+                setTimeout(() => {
+                    if (message.parentNode) {
+                        message.parentNode.removeChild(message);
+                    }
+                }, 300);
+            }, 3000);
+        }
+
+        // Rendu des véhicules dans la boutique
+        function renderVehicles() {
+            const container = document.getElementById('vehicles-container');
+            container.innerHTML = '';
+
+            vehicles.forEach(vehicle => {
+                const vehicleCard = document.createElement('div');
+                vehicleCard.className = 'vehicle-card';
+                
+                // Vérifier si c'est une URL d'image ou un emoji
+                let imageContent;
+                if (vehicle.image && (vehicle.image.startsWith('http') || vehicle.image.startsWith('https'))) {
+                    imageContent = `<img src="${vehicle.image}" alt="${vehicle.name}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 5px;" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                   <div style="display: none; width: 100%; height: 100%; align-items: center; justify-content: center; font-size: 3rem; color: #666;">🚗</div>`;
+                } else {
+                    imageContent = vehicle.image || '🚗';
+                }
+                
+                vehicleCard.innerHTML = `
+                    <div class="vehicle-image">${imageContent}</div>
+                    <h3 class="vehicle-name">${vehicle.name}</h3>
+                    <div class="vehicle-price">${vehicle.price.toLocaleString()} Secret Coins</div>
+                    <p class="vehicle-description">${vehicle.description}</p>
+                    <button class="btn" onclick="purchaseVehicle(${vehicle.id})">Acheter</button>
+                `;
+                container.appendChild(vehicleCard);
+            });
+        }
+
+        // Rendu de la liste des véhicules dans l'admin
+        function renderAdminVehicleList() {
+            const container = document.getElementById('admin-vehicle-list');
+            container.innerHTML = '';
+
+            vehicles.forEach(vehicle => {
+                const vehicleItem = document.createElement('div');
+                vehicleItem.className = 'vehicle-item';
+                vehicleItem.innerHTML = `
+                    <div class="vehicle-info">
+                        <div class="vehicle-item-name">${vehicle.name}</div>
+                        <div class="vehicle-item-price">${vehicle.price.toLocaleString()} Secret Coins</div>
+                    </div>
+                    <button class="delete-btn" onclick="deleteVehicle(${vehicle.id})">Supprimer</button>
+                `;
+                container.appendChild(vehicleItem);
+            });
+        }
+
+        // Fonction d'achat (simulation)
+        function purchaseVehicle(id) {
+            const vehicle = vehicles.find(v => v.id === id);
+            if (vehicle) {
+                showMessage(`Véhicule "${vehicle.name}" acheté avec succès pour ${vehicle.price.toLocaleString()} Secret Coins!`, 'success');
+            }
+        }
+
+        // Fonction pour valider les liens Discord
+        function isValidDiscordImageUrl(url) {
+            if (!url) return true; // URL optionnelle
+            return url.includes('cdn.discordapp.com') || url.includes('media.discordapp.net') || url.startsWith('https://');
+        }
+
+        // Fonction pour prévisualiser l'image
+        function previewImage(url) {
+            const preview = document.getElementById('image-preview');
+            const previewImg = document.getElementById('preview-img');
+            
+            if (url && isValidDiscordImageUrl(url)) {
+                previewImg.src = url;
+                previewImg.onload = function() {
+                    preview.style.display = 'block';
+                };
+                previewImg.onerror = function() {
+                    preview.style.display = 'none';
+                };
+            } else {
+                preview.style.display = 'none';
+            }
+        }
+
+        // Fonction pour ajouter un véhicule
+        function addVehicle(vehicleData) {
+            // Validation du lien d'image
+            if (vehicleData.image && !isValidDiscordImageUrl(vehicleData.image)) {
+                showMessage('Veuillez utiliser un lien d\'image valide (de préférence Discord).', 'error');
+                return;
+            }
+
+            const newVehicle = {
+                id: nextId++,
+                name: vehicleData.name,
+                price: parseInt(vehicleData.price),
+                description: vehicleData.description,
+                image: vehicleData.image || '🚗'
+            };
+            
+            vehicles.push(newVehicle);
+            showMessage(`Véhicule "${newVehicle.name}" ajouté avec succès!`, 'success');
+            renderAdminVehicleList();
+            
+            // Si on est sur la page boutique, rafraîchir aussi
+            if (document.getElementById('shop-section').style.display !== 'none') {
+                renderVehicles();
+            }
+        }
+
+        // Fonction pour supprimer un véhicule
+        function deleteVehicle(id) {
+            const vehicleIndex = vehicles.findIndex(v => v.id === id);
+            if (vehicleIndex !== -1) {
+                const vehicleName = vehicles[vehicleIndex].name;
+                vehicles.splice(vehicleIndex, 1);
+                showMessage(`Véhicule "${vehicleName}" supprimé avec succès!`, 'success');
+                renderAdminVehicleList();
+                
+                // Si on est sur la page boutique, rafraîchir aussi
+                if (document.getElementById('shop-section').style.display !== 'none') {
+                    renderVehicles();
+                }
+            }
+        }
+
+        // Fonction pour afficher les messages
+        function showMessage(text, type) {
+            const container = document.getElementById('message-container');
+            const message = document.createElement('div');
+            message.className = `message ${type}`;
+            message.textContent = text;
+            
+            container.innerHTML = '';
+            container.appendChild(message);
+            
+            // Supprimer le message après 3 secondes
+            setTimeout(() => {
+                message.style.opacity = '0';
+                setTimeout(() => {
+                    if (message.parentNode) {
+                        message.parentNode.removeChild(message);
+                    }
+                }, 300);
+            }, 3000);
+        }
+
+        // Gestion du formulaire de connexion
+        document.getElementById('login-form-element').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            const username = formData.get('username');
+            const password = formData.get('password');
+            
+            login(username, password);
+        });
+
+        // Gestion du formulaire de véhicule
+        document.getElementById('vehicle-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            const vehicleData = {
+                name: formData.get('name'),
+                price: formData.get('price'),
+                description: formData.get('description'),
+                image: formData.get('image')
+            };
+            
+            // Validation
+            if (!vehicleData.name || !vehicleData.price || !vehicleData.description) {
+                showMessage('Veuillez remplir tous les champs obligatoires!', 'error');
+                return;
+            }
+            
+            if (vehicleData.price < 0) {
+                showMessage('Le prix doit être positif!', 'error');
+                return;
+            }
+            
+            addVehicle(vehicleData);
+            this.reset();
+            // Cacher l'aperçu de l'image après soumission
+            document.getElementById('image-preview').style.display = 'none';
+        });
+
+        // Initialisation
+        document.addEventListener('DOMContentLoaded', function() {
+            showShop(); // Afficher la boutique par défaut
+        });
+    </script>
+</body>
+</html>
