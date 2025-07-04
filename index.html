@@ -254,6 +254,23 @@
             cursor: pointer;
         }
 
+        /* Titre des images de détails */
+        .detail-photo-title {
+            background: linear-gradient(45deg, #ff4500, #ff6500);
+            color: white;
+            font-family: 'Orbitron', monospace;
+            font-weight: bold;
+            font-size: 0.8rem;
+            text-align: center;
+            padding: 0.5rem;
+            margin-bottom: 0.5rem;
+            border-radius: 5px 5px 0 0;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+            box-shadow: 0 2px 5px rgba(255, 69, 0, 0.3);
+        }
+
         /* Lightbox pour affichage en grand des images */
         .lightbox {
             position: fixed;
@@ -680,6 +697,50 @@
             opacity: 0.8;
         }
 
+        /* Styles pour les images dans l'admin */
+        .admin-vehicle-images {
+            grid-column: span 3;
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid #444;
+        }
+
+        .admin-images-title {
+            font-family: 'Orbitron', monospace;
+            color: #4ade80;
+            font-size: 0.9rem;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .admin-images-list {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .admin-image-item {
+            text-align: center;
+        }
+
+        .admin-image-title {
+            background: linear-gradient(45deg, #ff4500, #ff6500);
+            color: white;
+            font-family: 'Roboto Mono', monospace;
+            font-weight: bold;
+            font-size: 0.7rem;
+            text-align: center;
+            padding: 0.3rem 0.5rem;
+            margin-bottom: 0.3rem;
+            border-radius: 3px;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+            box-shadow: 0 1px 3px rgba(255, 69, 0, 0.3);
+        }
+
         /* Menu de navigation amélioré */
         nav {
             background: linear-gradient(45deg, #2c1810, #3d2317);
@@ -1089,8 +1150,7 @@
                 
                 <!-- Filtres par catégorie -->
                 <div class="category-filters" style="margin-top: 2rem; display: flex; justify-content: center; gap: 1rem; flex-wrap: wrap;">
-                    <button class="category-btn active" onclick="filterByCategory('all')">Tous</button>
-                    <button class="category-btn" onclick="filterByCategory('Camion')">Camions</button>
+                    <button class="category-btn active" onclick="filterByCategory('Camion')">Camions</button>
                     <button class="category-btn" onclick="filterByCategory('Moto')">Motos</button>
                     <button class="category-btn" onclick="filterByCategory('Import')">Import</button>
                     <button class="category-btn" onclick="filterByCategory('Remorque')">Remorques</button>
@@ -1241,7 +1301,7 @@
         let vehicles = [];
         let nextId = 1;
         let isLoggedIn = false;
-        let currentFilter = 'all';
+        let currentFilter = 'Camion';
         let firebaseConnected = false;
 
         // Identifiants d'accès
@@ -1356,7 +1416,7 @@
                 loadVehiclesFromLocalStorage();
             }
             
-            renderVehicles();
+            renderVehicles(currentFilter);
         }
 
         // Créer les véhicules par défaut dans Firebase
@@ -1622,8 +1682,7 @@
             });
             
             document.querySelectorAll('.category-btn').forEach(btn => {
-                if ((category === 'all' && btn.textContent === 'Tous') ||
-                    (category === 'Camion' && btn.textContent === 'Camions') ||
+                if ((category === 'Camion' && btn.textContent === 'Camions') ||
                     (category === 'Moto' && btn.textContent === 'Motos') ||
                     (category === 'Import' && btn.textContent === 'Import') ||
                     (category === 'Remorque' && btn.textContent === 'Remorques')) {
@@ -1639,7 +1698,7 @@
             container.innerHTML = '';
 
             let filteredVehicles = vehicles;
-            if (filterCategory && filterCategory !== 'all') {
+            if (filterCategory) {
                 filteredVehicles = vehicles.filter(vehicle => vehicle.category === filterCategory);
             }
 
@@ -1703,11 +1762,54 @@
             vehicles.forEach(vehicle => {
                 const vehicleItem = document.createElement('div');
                 vehicleItem.className = 'admin-vehicle-item';
+                
+                // Générer l'affichage des images avec détails numérotés
+                let imageDetails = '';
+                if (vehicle.image) {
+                    const images = vehicle.image.split(',').map(img => img.trim()).filter(img => img.length > 0);
+                    if (images.length > 0) {
+                        imageDetails = `
+                            <div class="admin-vehicle-images">
+                                <div class="admin-images-title">🖼️ Images (${images.length})</div>
+                                <div class="admin-images-list">
+                                    ${images.map((image, index) => {
+                                        const detailNumber = index + 1;
+                                        const isMainImage = index === 0;
+                                        const title = isMainImage ? 'Image principale' : `Détail ${detailNumber - 1}`;
+                                        
+                                        if (image.startsWith('http') || image.startsWith('https')) {
+                                            return `
+                                                <div class="admin-image-item">
+                                                    <div class="admin-image-title">${title}</div>
+                                                    <img src="${image}" alt="${vehicle.name}" 
+                                                         style="width: 60px; height: 40px; object-fit: cover; border-radius: 3px; cursor: pointer;"
+                                                         onclick="openLightbox('${image}', '${vehicle.name.replace(/'/g, "\\'")}')"
+                                                         onerror="this.style.display='none';">
+                                                </div>
+                                            `;
+                                        } else {
+                                            return `
+                                                <div class="admin-image-item">
+                                                    <div class="admin-image-title">${title}</div>
+                                                    <div style="width: 60px; height: 40px; display: flex; align-items: center; justify-content: center; background: #333; border-radius: 3px; font-size: 1.5rem;">
+                                                        ${image}
+                                                    </div>
+                                                </div>
+                                            `;
+                                        }
+                                    }).join('')}
+                                </div>
+                            </div>
+                        `;
+                    }
+                }
+                
                 vehicleItem.innerHTML = `
                     <div class="admin-vehicle-info">
                         <div class="admin-vehicle-name">${vehicle.name}</div>
                         <div class="admin-vehicle-category">${vehicle.category || 'Non classé'}</div>
                         <div class="admin-vehicle-price">${vehicle.price.toLocaleString()}</div>
+                        ${imageDetails}
                     </div>
                     <div class="admin-vehicle-actions">
                         <button class="btn-small btn-danger" onclick="deleteVehicle(${vehicle.id})">
@@ -1757,32 +1859,37 @@
 
         // Fonction pour basculer l'affichage du menu déroulant de détails
         function toggleVehicleDetails(vehicleId) {
+            console.log('🔄 Toggle details pour véhicule ID:', vehicleId);
             const detailsMenu = document.getElementById(`vehicle-details-${vehicleId}`);
             
-            if (detailsMenu) {
-                if (detailsMenu.style.display === 'none' || detailsMenu.style.display === '') {
-                    // Fermer tous les autres menus ouverts
-                    const allDetailsMenus = document.querySelectorAll('.vehicle-details-menu');
-                    allDetailsMenus.forEach(menu => {
-                        if (menu.id !== `vehicle-details-${vehicleId}`) {
-                            menu.style.display = 'none';
-                        }
+            if (!detailsMenu) {
+                console.error('❌ Menu de détails introuvable pour ID:', vehicleId);
+                return;
+            }
+            
+            const isCurrentlyHidden = detailsMenu.style.display === 'none' || detailsMenu.style.display === '';
+            
+            // TOUJOURS fermer tous les menus d'abord
+            const allDetailsMenus = document.querySelectorAll('.vehicle-details-menu');
+            console.log('🔄 Fermeture de tous les menus:', allDetailsMenus.length);
+            allDetailsMenus.forEach(menu => {
+                menu.style.display = 'none';
+            });
+            
+            // Si le menu était fermé, l'ouvrir maintenant
+            if (isCurrentlyHidden) {
+                console.log('✅ Ouverture du menu pour véhicule:', vehicleId);
+                detailsMenu.style.display = 'block';
+                
+                // Faire défiler vers le menu avec une animation douce
+                setTimeout(() => {
+                    detailsMenu.scrollIntoView({ 
+                        behavior: 'smooth', 
+                        block: 'nearest' 
                     });
-                    
-                    // Ouvrir le menu actuel
-                    detailsMenu.style.display = 'block';
-                    
-                    // Faire défiler vers le menu avec une animation douce
-                    setTimeout(() => {
-                        detailsMenu.scrollIntoView({ 
-                            behavior: 'smooth', 
-                            block: 'nearest' 
-                        });
-                    }, 100);
-                } else {
-                    // Fermer le menu
-                    detailsMenu.style.display = 'none';
-                }
+                }, 100);
+            } else {
+                console.log('✅ Fermeture du menu pour véhicule:', vehicleId);
             }
         }
 
@@ -1852,7 +1959,7 @@
                 
                 // Mettre à jour les affichages
                 renderAdminVehicleList();
-                renderVehicles();
+                renderVehicles(currentFilter);
                 
                 showMessage('✅ Tous les véhicules ont été supprimés avec succès !', 'success');
                 console.log('✅ Réinitialisation terminée');
