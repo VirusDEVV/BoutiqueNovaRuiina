@@ -573,41 +573,7 @@
     </div>
 
     <script>
-        // Véhicules par défaut
-        const defaultVehicles = [
-            {
-                id: 1,
-                name: "Terrabit",
-                price: 45000,
-                description: "Véhicule tout-terrain blindé, parfait pour traverser les zones radioactives.",
-                image: "🏎️",
-                category: "Import"
-            },
-            {
-                id: 2,
-                name: "Wasteland Truck",
-                price: 75000,
-                description: "Camion lourd avec armure renforcée et capacité de transport maximale.",
-                image: "🚛",
-                category: "Camion"
-            },
-            {
-                id: 3,
-                name: "Desert Raider",
-                price: 35000,
-                description: "Moto rapide et agile pour les raids dans le désert post-apocalyptique.",
-                image: "🏍️",
-                category: "Moto"
-            },
-            {
-                id: 4,
-                name: "Armored Beast",
-                price: 95000,
-                description: "Tank civil modifié avec tourelle défensive et blindage maximal.",
-                image: "🚗",
-                category: "Import"
-            }
-        ];
+        // Charger les véhicules au chargement de la page
 
         // Charger les véhicules depuis le localStorage ou utiliser les véhicules par défaut
         function loadVehicles() {
