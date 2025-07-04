@@ -670,7 +670,7 @@
             }
         }
 
-        // Charger les véhicules
+        // Charger les véhicules (VERSION SANS DÉFAUT)
         async function loadVehicles() {
             console.log('🔄 Chargement des véhicules...');
             
@@ -691,9 +691,10 @@
                     
                     nextId = maxId + 1;
                     
+                    // NE PAS créer de véhicules par défaut
                     if (vehicles.length === 0) {
-                        console.log('🆕 Aucun véhicule trouvé, création des véhicules par défaut...');
-                        await createDefaultVehicles();
+                        console.log('ℹ️ Aucun véhicule - base vide');
+                        nextId = 1;
                     }
                     
                     console.log('✅ Véhicules chargés depuis Firebase:', vehicles.length);
@@ -760,7 +761,7 @@
             }
         }
 
-        // Fallback localStorage
+        // Fallback localStorage (VERSION SANS DÉFAUT)
         function loadVehiclesFromLocalStorage() {
             const savedVehicles = localStorage.getItem('wasteland_vehicles');
             const savedNextId = localStorage.getItem('wasteland_nextId');
@@ -770,10 +771,10 @@
                 nextId = savedNextId ? parseInt(savedNextId) : getMaxId() + 1;
                 console.log('📱 Véhicules chargés depuis localStorage:', vehicles.length);
             } else {
-                vehicles = [...defaultVehicles];
-                nextId = defaultVehicles.length + 1;
-                saveVehiclesToLocalStorage();
-                console.log('🆕 Véhicules par défaut chargés (localStorage)');
+                // Base vide - aucun véhicule par défaut
+                vehicles = [];
+                nextId = 1;
+                console.log('ℹ️ Base vide - aucun véhicule');
             }
         }
 
