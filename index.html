@@ -572,11 +572,121 @@
         </section>
     </div>
 
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
     <script>
-        // Charger les véhicules au chargement de la page
+        // Configuration Firebase (à remplacer par vos clés)
+        const firebaseConfig = {
+            apiKey: "VOTRE_API_KEY",
+            authDomain: "novaruiina-boutique.firebaseapp.com",
+            projectId: "novaruiina-boutique",
+            storageBucket: "novaruiina-boutique.appspot.com",
+            messagingSenderId: "123456789",
+            appId: "VOTRE_APP_ID"
+        };
 
-        // Charger les véhicules depuis le localStorage ou utiliser les véhicules par défaut
-        function loadVehicles() {
+        // Initialiser Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        // Charger les véhicules depuis Firebase
+        async function loadVehicles() {
+            try {
+                const snapshot = await db.collection('vehicles').orderBy('id').get();
+                vehicles = [];
+                let maxId = 0;
+                
+                snapshot.forEach(doc => {
+                    const vehicle = { ...doc.data(), firestoreId: doc.id };
+                    vehicles.push(vehicle);
+                    if (vehicle.id > maxId) maxId = vehicle.id;
+                });
+                
+                nextId = maxId + 1;
+                
+                // Si aucun véhicule, créer les véhicules par défaut
+                if (vehicles.length === 0) {
+                    await createDefaultVehicles();
+                }
+                
+                console.log('Véhicules chargés depuis Firebase:', vehicles);
+            } catch (error) {
+                console.error('Erreur lors du chargement:', error);
+                // Fallback vers localStorage
+                loadVehiclesFromLocalStorage();
+            }
+        }
+
+        // Créer les véhicules par défaut dans Firebase
+        async function createDefaultVehicles() {
+            const defaultVehicles = [
+                {
+                    id: 1,
+                    name: "Terrabit",
+                    price: 45000,
+                    description: "Véhicule tout-terrain blindé, parfait pour traverser les zones radioactives.",
+                    image: "🏎️",
+                    category: "Import"
+                },
+                {
+                    id: 2,
+                    name: "Wasteland Truck",
+                    price: 75000,
+                    description: "Camion lourd avec armure renforcée et capacité de transport maximale.",
+                    image: "🚛",
+                    category: "Camion"
+                },
+                {
+                    id: 3,
+                    name: "Desert Raider",
+                    price: 35000,
+                    description: "Moto rapide et agile pour les raids dans le désert post-apocalyptique.",
+                    image: "🏍️",
+                    category: "Moto"
+                },
+                {
+                    id: 4,
+                    name: "Armored Beast",
+                    price: 95000,
+                    description: "Tank civil modifié avec tourelle défensive et blindage maximal.",
+                    image: "🚗",
+                    category: "Import"
+                }
+            ];
+
+            for (const vehicle of defaultVehicles) {
+                await db.collection('vehicles').add(vehicle);
+            }
+            
+            await loadVehicles(); // Recharger après création
+        }
+
+        // Sauvegarder un véhicule dans Firebase
+        async function saveVehicleToFirebase(vehicle) {
+            try {
+                const docRef = await db.collection('vehicles').add(vehicle);
+                vehicle.firestoreId = docRef.id;
+                console.log('Véhicule sauvegardé avec ID:', docRef.id);
+                return docRef.id;
+            } catch (error) {
+                console.error('Erreur lors de la sauvegarde:', error);
+                throw error;
+            }
+        }
+
+        // Supprimer un véhicule de Firebase
+        async function deleteVehicleFromFirebase(firestoreId) {
+            try {
+                await db.collection('vehicles').doc(firestoreId).delete();
+                console.log('Véhicule supprimé de Firebase');
+            } catch (error) {
+                console.error('Erreur lors de la suppression:', error);
+                throw error;
+            }
+        }
+
+        // Fallback vers localStorage
+        function loadVehiclesFromLocalStorage() {
             const savedVehicles = localStorage.getItem('wasteland_vehicles');
             const savedNextId = localStorage.getItem('wasteland_nextId');
             
@@ -584,17 +694,45 @@
                 vehicles = JSON.parse(savedVehicles);
                 nextId = savedNextId ? parseInt(savedNextId) : getMaxId() + 1;
             } else {
-                vehicles = [...defaultVehicles];
+                vehicles = [...defaultVehiclesLocal];
                 nextId = 5;
-                saveVehicles(); // Sauvegarder les véhicules par défaut
             }
         }
 
-        // Sauvegarder les véhicules dans le localStorage
-        function saveVehicles() {
-            localStorage.setItem('wasteland_vehicles', JSON.stringify(vehicles));
-            localStorage.setItem('wasteland_nextId', nextId.toString());
-        }
+        const defaultVehiclesLocal = [
+            {
+                id: 1,
+                name: "Terrabit",
+                price: 45000,
+                description: "Véhicule tout-terrain blindé, parfait pour traverser les zones radioactives.",
+                image: "🏎️",
+                category: "Import"
+            },
+            {
+                id: 2,
+                name: "Wasteland Truck",
+                price: 75000,
+                description: "Camion lourd avec armure renforcée et capacité de transport maximale.",
+                image: "🚛",
+                category: "Camion"
+            },
+            {
+                id: 3,
+                name: "Desert Raider",
+                price: 35000,
+                description: "Moto rapide et agile pour les raids dans le désert post-apocalyptique.",
+                image: "🏍️",
+                category: "Moto"
+            },
+            {
+                id: 4,
+                name: "Armored Beast",
+                price: 95000,
+                description: "Tank civil modifié avec tourelle défensive et blindage maximal.",
+                image: "🚗",
+                category: "Import"
+            }
+        ];
 
         // Obtenir l'ID maximum pour éviter les conflits
         function getMaxId() {
@@ -812,7 +950,7 @@
         }
 
         // Fonction pour ajouter un véhicule
-        function addVehicle(vehicleData) {
+        async function addVehicle(vehicleData) {
             // Validation du lien d'image
             if (vehicleData.image && !isValidDiscordImageUrl(vehicleData.image)) {
                 showMessage('Veuillez utiliser un lien d\'image valide (de préférence Discord).', 'error');
@@ -828,34 +966,52 @@
                 category: vehicleData.category
             };
             
-            // Debug: vérifier que la catégorie est bien définie
-            console.log('Nouveau véhicule ajouté:', newVehicle);
-            
-            vehicles.push(newVehicle);
-            saveVehicles(); // Sauvegarder après ajout
-            showMessage(`Véhicule "${newVehicle.name}" ajouté avec succès dans la catégorie "${newVehicle.category}"!`, 'success');
-            renderAdminVehicleList();
-            
-            // Si on est sur la page boutique, rafraîchir aussi
-            if (document.getElementById('shop-section').style.display !== 'none') {
-                renderVehicles(currentFilter);
-            }
-        }
-
-        // Fonction pour supprimer un véhicule
-        // Fonction pour supprimer un véhicule
-        function deleteVehicle(id) {
-            const vehicleIndex = vehicles.findIndex(v => v.id === id);
-            if (vehicleIndex !== -1) {
-                const vehicleName = vehicles[vehicleIndex].name;
-                vehicles.splice(vehicleIndex, 1);
-                saveVehicles(); // Sauvegarder après suppression
-                showMessage(`Véhicule "${vehicleName}" supprimé avec succès!`, 'success');
+            try {
+                // Sauvegarder dans Firebase
+                await saveVehicleToFirebase(newVehicle);
+                
+                // Ajouter à la liste locale
+                vehicles.push(newVehicle);
+                
+                showMessage(`Véhicule "${newVehicle.name}" ajouté avec succès dans la catégorie "${newVehicle.category}"!`, 'success');
                 renderAdminVehicleList();
                 
                 // Si on est sur la page boutique, rafraîchir aussi
                 if (document.getElementById('shop-section').style.display !== 'none') {
-                    renderVehicles();
+                    renderVehicles(currentFilter);
+                }
+            } catch (error) {
+                showMessage('Erreur lors de l\'ajout du véhicule. Veuillez réessayer.', 'error');
+                console.error('Erreur:', error);
+            }
+        }
+
+        // Fonction pour supprimer un véhicule
+        async function deleteVehicle(id) {
+            const vehicleIndex = vehicles.findIndex(v => v.id === id);
+            if (vehicleIndex !== -1) {
+                const vehicle = vehicles[vehicleIndex];
+                const vehicleName = vehicle.name;
+                
+                try {
+                    // Supprimer de Firebase si l'ID Firestore existe
+                    if (vehicle.firestoreId) {
+                        await deleteVehicleFromFirebase(vehicle.firestoreId);
+                    }
+                    
+                    // Supprimer de la liste locale
+                    vehicles.splice(vehicleIndex, 1);
+                    
+                    showMessage(`Véhicule "${vehicleName}" supprimé avec succès!`, 'success');
+                    renderAdminVehicleList();
+                    
+                    // Si on est sur la page boutique, rafraîchir aussi
+                    if (document.getElementById('shop-section').style.display !== 'none') {
+                        renderVehicles(currentFilter);
+                    }
+                } catch (error) {
+                    showMessage('Erreur lors de la suppression. Veuillez réessayer.', 'error');
+                    console.error('Erreur:', error);
                 }
             }
         }
@@ -939,8 +1095,8 @@
         });
 
         // Initialisation
-        document.addEventListener('DOMContentLoaded', function() {
-            loadVehicles(); // Charger les véhicules sauvegardés
+        document.addEventListener('DOMContentLoaded', async function() {
+            await loadVehicles(); // Charger les véhicules depuis Firebase
             showShop(); // Afficher la boutique par défaut
         });
     </script>
