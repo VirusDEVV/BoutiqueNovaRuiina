@@ -1239,22 +1239,59 @@
                         </div>
                         
                         <div class="form-group">
-                            <label for="vehicle-image">🖼️ URLs des images Discord</label>
-                            <input type="text" id="vehicle-image" name="image" placeholder="https://cdn.discordapp.com/attachments/..., https://..." oninput="previewImage(this.value)">
+                            <label for="vehicle-main-image">� Image principale (Discord)</label>
+                            <input type="text" id="vehicle-main-image" name="mainImage" placeholder="https://cdn.discordapp.com/attachments/..." oninput="previewMainImage(this.value)">
                             <div class="input-help">
                                 <div class="help-item">
-                                    <strong>📸 Première image :</strong> Affichée sur la carte principale
+                                    <strong>📸 Image principale :</strong> Affichée sur la carte du véhicule dans la boutique
                                 </div>
                                 <div class="help-item">
-                                    <strong>🖼️ Images supplémentaires :</strong> Visibles dans le menu "Details" (séparez par des virgules)
+                                    <strong>� Astuce :</strong> Clic droit sur l'image Discord → "Copier le lien de l'image"
+                                </div>
+                            </div>
+                            <div id="main-image-preview" style="margin-top: 1rem; display: none;">
+                                <div class="preview-label">Aperçu de l'image principale :</div>
+                                <img id="main-preview-img" style="max-width: 200px; max-height: 150px; border-radius: 5px; border: 2px solid #ff4500;">
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="vehicle-detail-image">🔍 Image de détail 1 (Discord)</label>
+                            <input type="text" id="vehicle-detail-image" name="detailImage" placeholder="https://cdn.discordapp.com/attachments/..." oninput="previewDetailImage(this.value)">
+                            <div class="input-help">
+                                <div class="help-item">
+                                    <strong>🔍 Image de détail 1 :</strong> Première image visible dans le menu "Details"
+                                </div>
+                                <div class="help-item">
+                                    <strong>📝 Optionnel :</strong> Si pas d'image de détail, seule l'image principale sera affichée
                                 </div>
                                 <div class="help-item">
                                     <strong>💡 Astuce :</strong> Clic droit sur l'image Discord → "Copier le lien de l'image"
                                 </div>
                             </div>
-                            <div id="image-preview" style="margin-top: 1rem; display: none;">
-                                <div class="preview-label">Aperçu de la première image :</div>
-                                <img id="preview-img" style="max-width: 200px; max-height: 150px; border-radius: 5px; border: 2px solid #ff4500;">
+                            <div id="detail-image-preview" style="margin-top: 1rem; display: none;">
+                                <div class="preview-label">Aperçu de l'image de détail 1 :</div>
+                                <img id="detail-preview-img" style="max-width: 200px; max-height: 150px; border-radius: 5px; border: 2px solid #4ade80;">
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="vehicle-detail-image2">🔍 Image de détail 2 (Discord)</label>
+                            <input type="text" id="vehicle-detail-image2" name="detailImage2" placeholder="https://cdn.discordapp.com/attachments/..." oninput="previewDetailImage2(this.value)">
+                            <div class="input-help">
+                                <div class="help-item">
+                                    <strong>🔍 Image de détail 2 :</strong> Deuxième image visible dans le menu "Details"
+                                </div>
+                                <div class="help-item">
+                                    <strong>📝 Optionnel :</strong> Ajout d'une image supplémentaire pour plus de détails
+                                </div>
+                                <div class="help-item">
+                                    <strong>💡 Astuce :</strong> Clic droit sur l'image Discord → "Copier le lien de l'image"
+                                </div>
+                            </div>
+                            <div id="detail-image2-preview" style="margin-top: 1rem; display: none;">
+                                <div class="preview-label">Aperçu de l'image de détail 2 :</div>
+                                <img id="detail-preview-img2" style="max-width: 200px; max-height: 150px; border-radius: 5px; border: 2px solid #8b5cf6;">
                             </div>
                         </div>
                         
@@ -1506,12 +1543,31 @@
                 return;
             }
 
+            // Combiner les images principale et de détail
+            let combinedImages = '';
+            if (vehicleData.mainImage) {
+                combinedImages = vehicleData.mainImage.trim();
+                if (vehicleData.detailImage && vehicleData.detailImage.trim()) {
+                    combinedImages += ', ' + vehicleData.detailImage.trim();
+                }
+                if (vehicleData.detailImage2 && vehicleData.detailImage2.trim()) {
+                    combinedImages += ', ' + vehicleData.detailImage2.trim();
+                }
+            } else if (vehicleData.detailImage && vehicleData.detailImage.trim()) {
+                combinedImages = vehicleData.detailImage.trim();
+                if (vehicleData.detailImage2 && vehicleData.detailImage2.trim()) {
+                    combinedImages += ', ' + vehicleData.detailImage2.trim();
+                }
+            } else if (vehicleData.detailImage2 && vehicleData.detailImage2.trim()) {
+                combinedImages = vehicleData.detailImage2.trim();
+            }
+
             const newVehicle = {
                 id: nextId,
                 name: vehicleData.name,
                 price: parseInt(vehicleData.price),
                 description: vehicleData.description,
-                image: vehicleData.image || '🚗',
+                image: combinedImages || '🚗',
                 category: vehicleData.category,
                 createdAt: new Date().toISOString() // Timestamp pour debug
             };
@@ -1605,26 +1661,49 @@
         }
 
         // Prévisualisation image (prend la première URL si plusieurs sont saisies)
-        function previewImage(urls) {
-            const preview = document.getElementById('image-preview');
-            const previewImg = document.getElementById('preview-img');
+        // Prévisualisation image principale
+        function previewMainImage(url) {
+            const preview = document.getElementById('main-image-preview');
+            const previewImg = document.getElementById('main-preview-img');
             
-            if (urls) {
-                // Prendre la première URL de la liste
-                const firstUrl = urls.split(',')[0].trim();
-                
-                if (firstUrl && isValidDiscordImageUrl(firstUrl)) {
-                    previewImg.src = firstUrl;
-                    previewImg.onload = () => preview.style.display = 'block';
-                    previewImg.onerror = () => preview.style.display = 'none';
-                } else {
-                    preview.style.display = 'none';
-                }
+            if (url && isValidDiscordImageUrl(url)) {
+                previewImg.src = url.trim();
+                previewImg.onload = () => preview.style.display = 'block';
+                previewImg.onerror = () => preview.style.display = 'none';
             } else {
                 preview.style.display = 'none';
             }
         }
 
+        // Prévisualisation image de détail
+        function previewDetailImage(url) {
+            const preview = document.getElementById('detail-image-preview');
+            const previewImg = document.getElementById('detail-preview-img');
+            
+            if (url && isValidDiscordImageUrl(url)) {
+                previewImg.src = url.trim();
+                previewImg.onload = () => preview.style.display = 'block';
+                previewImg.onerror = () => preview.style.display = 'none';
+            } else {
+                preview.style.display = 'none';
+            }
+        }
+
+        // Prévisualisation image de détail 2
+        function previewDetailImage2(url) {
+            const preview = document.getElementById('detail-image2-preview');
+            const previewImg = document.getElementById('detail-preview-img2');
+            
+            if (url && isValidDiscordImageUrl(url)) {
+                previewImg.src = url.trim();
+                previewImg.onload = () => preview.style.display = 'block';
+                previewImg.onerror = () => preview.style.display = 'none';
+            } else {
+                preview.style.display = 'none';
+            }
+        }
+
+        // ...existing code...
         // Reste des fonctions (navigation, rendu, etc.)
         function showShop() {
             document.getElementById('shop-section').style.display = 'block';
@@ -1837,20 +1916,26 @@
             // Afficher toutes les images sauf la première (qui est déjà affichée sur la carte)
             const additionalImages = images.slice(1);
             
-            return additionalImages.map(image => {
+            return additionalImages.map((image, index) => {
+                const detailNumber = index + 1;
+                
                 if (image.startsWith('http') || image.startsWith('https')) {
                     return `
                         <div class="detail-photo">
+                            <div class="detail-photo-title">Détail ${detailNumber}</div>
                             <img src="${image}" alt="${vehicle.name}" 
-                                 style="width: 100%; height: 120px; object-fit: cover; border-radius: 5px; margin-bottom: 0.5rem; cursor: pointer;"
+                                 style="width: 100%; height: 120px; object-fit: cover; border-radius: 0 0 5px 5px; cursor: pointer;"
                                  onclick="openLightbox('${image}', '${vehicle.name.replace(/'/g, "\\'")}')"
                                  onerror="this.style.display='none';">
                         </div>
                     `;
                 } else {
                     return `
-                        <div class="detail-photo" style="display: flex; align-items: center; justify-content: center; height: 120px; font-size: 2rem; background: #f3f4f6; border-radius: 5px; margin-bottom: 0.5rem;">
-                            ${image}
+                        <div class="detail-photo">
+                            <div class="detail-photo-title">Détail ${detailNumber}</div>
+                            <div style="width: 100%; height: 120px; display: flex; align-items: center; justify-content: center; font-size: 2rem; background: #333; border-radius: 0 0 5px 5px;">
+                                ${image}
+                            </div>
                         </div>
                     `;
                 }
@@ -2024,12 +2109,16 @@
                 category: formData.get('category'),
                 price: formData.get('price'),
                 description: formData.get('description'),
-                image: formData.get('image')
+                mainImage: formData.get('mainImage'),
+                detailImage: formData.get('detailImage'),
+                detailImage2: formData.get('detailImage2')
             };
             
             addVehicle(vehicleData);
             this.reset();
-            document.getElementById('image-preview').style.display = 'none';
+            document.getElementById('main-image-preview').style.display = 'none';
+            document.getElementById('detail-image-preview').style.display = 'none';
+            document.getElementById('detail-image2-preview').style.display = 'none';
         });
 
         // Initialisation
